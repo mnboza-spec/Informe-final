@@ -383,12 +383,27 @@ input:focus, textarea:focus {
 @media (max-width: 768px) {
     .toolbar {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center; /* Center logo and actions */
+        padding: 15px 10px;
     }
-    .logo-area { margin-bottom: 15px; }
+    .logo-area { margin-bottom: 15px; text-align: center; }
     .actions {
-        flex-wrap: wrap;
-        gap: 5px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+    }
+    .actions .btn, .actions label.btn {
+        width: 100%;
+        text-align: center;
+        padding: 10px 5px;
+        font-size: 0.85rem;
+    }
+    /* Make 'Vista Previa' span both columns as the primary action */
+    #btn-preview {
+        grid-column: span 2;
+        font-size: 1rem;
+        padding: 12px;
     }
     .grid-2, .grid-3, .photo-grid {
         grid-template-columns: 1fr;
