@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
         const downloadAnchorNode = document.createElement('a');
         
-        const fileName = (document.getElementById('cod_informe').value || 'informe') + '.gemsa';
+        const fileName = `Informe_${document.getElementById('num_informe').value || 'Tecnico'}.gemsa`;
         
         downloadAnchorNode.setAttribute("href", dataStr);
         downloadAnchorNode.setAttribute("download", fileName);
@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isPreview) updatePreview();
         
         const element = document.getElementById('document-content');
-        const filename = (document.getElementById('cod_informe').value || 'Informe_Tecnico') + '.pdf';
+        const filename = `Informe_${document.getElementById('num_informe').value || 'Tecnico'}.pdf`;
         
         const wasHidden = !isPreview;
         if (wasHidden) {
@@ -389,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         const url = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(html);
-        const filename = (document.getElementById('cod_informe').value || 'Informe_Tecnico') + '.doc';
+        const filename = `Informe_${document.getElementById('num_informe').value || 'Tecnico'}.doc`;
         
         const downloadLink = document.createElement("a");
         document.body.appendChild(downloadLink);
@@ -438,7 +438,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const descripcion = document.getElementById('introduccion').value;
-        const nombreProyecto = document.getElementById('nombre_proyecto').value;
         const detProyecto = document.getElementById('det_proyecto').value;
 
         const files = aiContextPhotosInput.files;
@@ -456,8 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 type: "text",
                 text: `Eres un inspector técnico de servicios generales (GEMSA). 
 Genera un informe estructurado en base a esta descripción y las imágenes proporcionadas. 
-Nombre Proyecto: ${nombreProyecto}
-Detalle: ${detProyecto}
+Detalle Proyecto: ${detProyecto}
 Descripción: ${descripcion}
 
 Devuelve ÚNICAMENTE un objeto JSON válido con la siguiente estructura y nada más:
