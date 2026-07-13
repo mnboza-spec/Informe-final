@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Informes - GEMSA</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header / Toolbar -->
+        <header class="toolbar no-print">
+            <div class="logo-area">
+                <span class="logo-text">GEMSA <small>SERVICIOS GENERALES</small></span>
+            </div>
+            <div class="actions">
+                <button id="btn-ai-settings" class="btn btn-secondary" title="Configurar Inteligencia Artificial">⚙️ Config IA</button>
+                <button id="btn-reset" class="btn btn-danger">Restablecer</button>
+                <button id="btn-preview" class="btn btn-primary">Vista Previa</button>
+                <button id="btn-print" class="btn btn-success">Imprimir PDF</button>
+                <button id="btn-save" class="btn btn-secondary">Guardar archivo</button>
+                <label for="file-upload" class="btn btn-secondary" style="cursor: pointer;">Abrir archivo</label>
+                <input id="file-upload" type="file" accept=".json,.gemsa" style="display: none;">
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Form View -->
+            <section id="form-view" class="view active no-print">
+                <div class="form-container">
+                    <h1 class="form-title">Nuevo Informe Técnico</h1>
+                    <form id="report-form">
+                        
+                        <!-- Encabezado e Identificación -->
+                        <fieldset>
+                            <legend>Encabezado e Identificación</legend>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label>Número de Informe</label>
+                                    <input type="text" id="num_informe" name="num_informe" placeholder="Ej. 001">
+                                </div>
+                                <div class="form-group">
+                                    <label>Código/Año del Informe</label>
+                                    <input type="text" id="cod_informe" name="cod_informe" placeholder="Ej. INF-2024-001">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre del Proyecto o Trabajo Realizado</label>
+                                <input type="text" id="nombre_proyecto" name="nombre_proyecto">
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre del Centro Comercial o Cliente</label>
+                                <input type="text" id="nombre_cliente" name="nombre_cliente">
+                            </div>
+                            <div class="form-group">
+                                <label>Mes y Año de Presentación</label>
+                                <input type="month" id="mes_presentacion" name="mes_presentacion">
+                            </div>
+                        </fieldset>
+
+                        <!-- Tabla de Datos Principales -->
+                        <fieldset>
+                            <legend>Datos Principales</legend>
+                            <div class="form-group">
+                                <label>PROYECTO (Nombre detallado)</label>
+                                <textarea id="det_proyecto" name="det_proyecto" rows="2"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>CLIENTE (Nombre de la empresa)</label>
+                                <input type="text" id="det_cliente" name="det_cliente">
+                            </div>
+                            <div class="form-group">
+                                <label>FECHA (Rango de fechas de ejecución)</label>
+                                <input type="text" id="det_fecha" name="det_fecha" placeholder="Ej. Del 01 al 15 de Mayo de 2024">
+                            </div>
+                        </fieldset>
+
+                        <!-- Introducción y Asistente IA -->
+                        <fieldset>
+                            <legend>Introducción</legend>
+                            <div class="form-group">
+                                <label>Descripción breve del servicio principal</label>
+                                <textarea id="introduccion" name="introduccion" rows="3"></textarea>
+                            </div>
+                            <div class="ai-assistant-container">
+                                <button type="button" id="btn-ai-autocomplete" class="btn btn-primary btn-ai">✨ Autocompletar con IA</button>
+                                <small class="ai-hint">La IA usará la descripción y las fotos cargadas para sugerir Objetivos, Alcance, Recursos, Procedimientos y Conclusiones.</small>
+                                <div id="ai-loading" style="display: none; margin-top: 10px; color: var(--primary-color);">Generando contenido, por favor espera...</div>
+                            </div>
+                        </fieldset>
+
+                        <!-- 1. OBJETIVOS -->
+                        <fieldset>
+                            <legend>1. Objetivos</legend>
+                            <div class="form-group">
+                                <label>Objetivo 1: Actividad principal y ubicación</label>
+                                <input type="text" id="obj_1" name="obj_1">
+                            </div>
+                            <div class="form-group">
+                                <label>Objetivo 2: Condiciones estéticas y acciones</label>
+                                <input type="text" id="obj_2" name="obj_2">
+                            </div>
+                            <div class="form-group">
+                                <label>Objetivo 3: Cumplimiento de seguridad</label>
+                                <input type="text" id="obj_3" name="obj_3" value="Cumplir estrictamente con las normas de seguridad y salud en el trabajo durante la ejecución.">
+                            </div>
+                        </fieldset>
+
+                        <!-- 2. ALCANCE DEL SERVICIO -->
+                        <fieldset>
+                            <legend>2. Alcance del Servicio</legend>
+                            <div id="alcance-list" class="checklist-container">
+                                <!-- Items will be added here by JS -->
+                            </div>
+                            <div class="add-item-group">
+                                <input type="text" id="new-alcance" placeholder="Nuevo ítem de alcance">
+                                <button type="button" id="btn-add-alcance" class="btn btn-sm">Añadir</button>
+                            </div>
+                        </fieldset>
+
+                        <!-- 3. RECURSOS UTILIZADOS -->
+                        <fieldset>
+                            <legend>3. Recursos Utilizados</legend>
+                            <h4>Mano de Obra</h4>
+                            <div class="grid-3">
+                                <div class="form-group">
+                                    <label>Operarios</label>
+                                    <input type="number" id="mo_operarios" name="mo_operarios" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Prevencionistas</label>
+                                    <input type="number" id="mo_prevencionistas" name="mo_prevencionistas" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Ayudantes</label>
+                                    <input type="number" id="mo_ayudantes" name="mo_ayudantes" min="0">
+                                </div>
+                            </div>
+                            
+                            <h4>Herramientas y Equipos</h4>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label>Equipos de altura</label>
+                                    <input type="text" id="he_altura" name="he_altura">
+                                </div>
+                                <div class="form-group">
+                                    <label>Elementos de seguridad</label>
+                                    <input type="text" id="he_seguridad" name="he_seguridad">
+                                </div>
+                                <div class="form-group">
+                                    <label>Herramientas específicas</label>
+                                    <input type="text" id="he_especificas" name="he_especificas">
+                                </div>
+                                <div class="form-group">
+                                    <label>Equipos mecánicos</label>
+                                    <input type="text" id="he_mecanicos" name="he_mecanicos">
+                                </div>
+                            </div>
+
+                            <h4>Materiales</h4>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label>Insumos principales</label>
+                                    <input type="text" id="mat_principales" name="mat_principales">
+                                </div>
+                                <div class="form-group">
+                                    <label>Insumos de limpieza</label>
+                                    <input type="text" id="mat_limpieza" name="mat_limpieza">
+                                </div>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Gestión de residuos</label>
+                                    <input type="text" id="mat_residuos" name="mat_residuos">
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- 4. PROCEDIMIENTO DE TRABAJO -->
+                        <fieldset>
+                            <legend>4. Procedimiento de Trabajo</legend>
+                            <div class="form-group">
+                                <label>4.1 Planificación y trabajos preliminares</label>
+                                <textarea id="proc_1" name="proc_1" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>4.2 Desarrollo técnico de las actividades</label>
+                                <textarea id="proc_2" name="proc_2" rows="4"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>4.3 Limpieza y entrega del área</label>
+                                <textarea id="proc_3" name="proc_3" rows="3"></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- 5. CONCLUSIONES Y RECOMENDACIONES -->
+                        <fieldset>
+                            <legend>5. Conclusiones y Recomendaciones</legend>
+                            <div class="form-group">
+                                <label>5.1 Conclusiones (separar por salto de línea)</label>
+                                <textarea id="conclusiones" name="conclusiones" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>5.2 Recomendaciones (separar por salto de línea)</label>
+                                <textarea id="recomendaciones" name="recomendaciones" rows="3"></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- Firma -->
+                        <fieldset>
+                            <legend>Firma del Responsable</legend>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label>Nombre del Responsable</label>
+                                    <input type="text" id="firma_nombre" name="firma_nombre">
+                                </div>
+                                <div class="form-group">
+                                    <label>Área</label>
+                                    <input type="text" id="firma_area" name="firma_area" value="Área de Operaciones" readonly>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- 6. ANEXO: PANEL FOTOGRÁFICO -->
+                        <fieldset>
+                            <legend>6. Anexo: Panel Fotográfico</legend>
+                            <div class="photo-grid">
+                                <!-- Foto 1 -->
+                                <div class="photo-upload-card">
+                                    <label>Foto 1: Antes</label>
+                                    <div class="img-preview" id="preview-foto-1"></div>
+                                    <input type="file" id="foto_1" accept="image/*">
+                                    <input type="text" id="desc_foto_1" placeholder="Descripción de la foto 1">
+                                </div>
+                                <!-- Foto 2 -->
+                                <div class="photo-upload-card">
+                                    <label>Foto 2: Durante</label>
+                                    <div class="img-preview" id="preview-foto-2"></div>
+                                    <input type="file" id="foto_2" accept="image/*">
+                                    <input type="text" id="desc_foto_2" placeholder="Descripción de la foto 2">
+                                </div>
+                                <!-- Foto 3 -->
+                                <div class="photo-upload-card">
+                                    <label>Foto 3: Acabado</label>
+                                    <div class="img-preview" id="preview-foto-3"></div>
+                                    <input type="file" id="foto_3" accept="image/*">
+                                    <input type="text" id="desc_foto_3" placeholder="Descripción de la foto 3">
+                                </div>
+                                <!-- Foto 4 -->
+                                <div class="photo-upload-card">
+                                    <label>Foto 4: Después</label>
+                                    <div class="img-preview" id="preview-foto-4"></div>
+                                    <input type="file" id="foto_4" accept="image/*">
+                                    <input type="text" id="desc_foto_4" placeholder="Descripción de la foto 4">
+                                </div>
+                            </div>
+                        </fieldset>
+
+                    </form>
+                </div>
+            </section>
+
+            <!-- Preview View (Document) -->
+            <section id="preview-view" class="view" style="display: none;">
+                <div class="document-wrapper" id="document-content">
+                    
+                    <!-- Cover Page / Header -->
+                    <div class="doc-header">
+                        <div class="doc-logo">
+                            <div class="gemsa-logo">
+                                <span class="gemsa">GEMSA</span>
+                                <span class="serv">SERVICIOS GENERALES</span>
+                            </div>
+                        </div>
+                        <div class="doc-title">
+                            <h1>INFORME TÉCNICO</h1>
+                            <h2 id="doc-num-informe">Informe N° </h2>
+                        </div>
+                    </div>
+
+                    <div class="doc-meta-table">
+                        <table class="bordered-table">
+                            <tr>
+                                <th width="25%">PROYECTO:</th>
+                                <td id="doc-det-proyecto"></td>
+                            </tr>
+                            <tr>
+                                <th>CLIENTE:</th>
+                                <td id="doc-det-cliente"></td>
+                            </tr>
+                            <tr>
+                                <th>FECHA:</th>
+                                <td id="doc-det-fecha"></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="doc-section">
+                        <h3>INTRODUCCIÓN</h3>
+                        <p id="doc-introduccion"></p>
+                    </div>
+
+                    <div class="doc-section">
+                        <h3>1. OBJETIVOS</h3>
+                        <ul class="doc-list">
+                            <li id="doc-obj-1"></li>
+                            <li id="doc-obj-2"></li>
+                            <li id="doc-obj-3"></li>
+                        </ul>
+                    </div>
+
+                    <div class="doc-section">
+                        <h3>2. ALCANCE DEL SERVICIO</h3>
+                        <ul class="doc-list" id="doc-alcance-list">
+                        </ul>
+                    </div>
+
+                    <div class="doc-section">
+                        <h3>3. RECURSOS UTILIZADOS</h3>
+                        <h4>Mano de Obra</h4>
+                        <ul class="doc-list">
+                            <li>Operarios: <span id="doc-mo-operarios"></span></li>
+                            <li>Prevencionistas: <span id="doc-mo-prevencionistas"></span></li>
+                            <li>Ayudantes: <span id="doc-mo-ayudantes"></span></li>
+                        </ul>
+                        
+                        <h4>Herramientas y Equipos</h4>
+                        <ul class="doc-list">
+                            <li>Equipos de altura: <span id="doc-he-altura"></span></li>
+                            <li>Elementos de seguridad: <span id="doc-he-seguridad"></span></li>
+                            <li>Herramientas específicas: <span id="doc-he-especificas"></span></li>
+                            <li>Equipos mecánicos: <span id="doc-he-mecanicos"></span></li>
+                        </ul>
+
+                        <h4>Materiales</h4>
+                        <ul class="doc-list">
+                            <li>Insumos principales: <span id="doc-mat-principales"></span></li>
+                            <li>Insumos de limpieza: <span id="doc-mat-limpieza"></span></li>
+                            <li>Gestión de residuos: <span id="doc-mat-residuos"></span></li>
+                        </ul>
+                    </div>
+
+                    <div class="page-break"></div>
+
+                    <div class="doc-section">
+                        <h3>4. PROCEDIMIENTO DE TRABAJO</h3>
+                        <h4>4.1 Planificación y trabajos preliminares</h4>
+                        <p id="doc-proc-1"></p>
+                        
+                        <h4>4.2 Desarrollo técnico de las actividades</h4>
+                        <p id="doc-proc-2"></p>
+                        
+                        <h4>4.3 Limpieza y entrega del área</h4>
+                        <p id="doc-proc-3"></p>
+                    </div>
+
+                    <div class="doc-section">
+                        <h3>5. CONCLUSIONES Y RECOMENDACIONES</h3>
+                        <h4>5.1 Conclusiones</h4>
+                        <ul class="doc-list" id="doc-conclusiones"></ul>
+                        
+                        <h4>5.2 Recomendaciones</h4>
+                        <ul class="doc-list" id="doc-recomendaciones"></ul>
+                    </div>
+
+                    <div class="doc-signature">
+                        <div class="signature-line"></div>
+                        <div id="doc-firma-nombre" class="sig-name"></div>
+                        <div id="doc-firma-area" class="sig-area">Área de Operaciones</div>
+                    </div>
+
+                    <div class="page-break"></div>
+
+                    <div class="doc-section">
+                        <h3>6. ANEXO: PANEL FOTOGRÁFICO</h3>
+                        <div class="doc-photo-grid">
+                            <div class="doc-photo-item">
+                                <div class="photo-img-box">
+                                    <img id="doc-img-1" src="" alt="Foto 1" style="display:none;">
+                                </div>
+                                <p class="photo-caption"><strong>Registro del Proceso / Antes:</strong> <br><span id="doc-desc-1"></span></p>
+                            </div>
+                            <div class="doc-photo-item">
+                                <div class="photo-img-box">
+                                    <img id="doc-img-2" src="" alt="Foto 2" style="display:none;">
+                                </div>
+                                <p class="photo-caption"><strong>Registro del Proceso / Durante:</strong> <br><span id="doc-desc-2"></span></p>
+                            </div>
+                            <div class="doc-photo-item">
+                                <div class="photo-img-box">
+                                    <img id="doc-img-3" src="" alt="Foto 3" style="display:none;">
+                                </div>
+                                <p class="photo-caption"><strong>Elementos Intervenidos / Acabado:</strong> <br><span id="doc-desc-3"></span></p>
+                            </div>
+                            <div class="doc-photo-item">
+                                <div class="photo-img-box">
+                                    <img id="doc-img-4" src="" alt="Foto 4" style="display:none;">
+                                </div>
+                                <p class="photo-caption"><strong>Área Final Entregada / Después:</strong> <br><span id="doc-desc-4"></span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal for Confirm Reset -->
+    <div id="reset-modal" class="modal no-print" style="display:none;">
+        <div class="modal-content">
+            <h3>¿Está seguro de que desea borrar todo el contenido?</h3>
+            <p>Esta acción no se puede deshacer.</p>
+            <div class="modal-actions">
+                <button id="btn-cancel-reset" class="btn btn-secondary">Cancelar</button>
+                <button id="btn-confirm-reset" class="btn btn-danger">Sí, borrar todo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for AI Settings -->
+    <div id="ai-settings-modal" class="modal no-print" style="display:none;">
+        <div class="modal-content">
+            <h3>Configuración de Inteligencia Artificial</h3>
+            <p>Ingresa tu API Key de OpenAI para habilitar las funciones de autocompletado.</p>
+            <div class="form-group" style="text-align: left; margin-top: 15px;">
+                <label>OpenAI API Key</label>
+                <input type="password" id="openai-api-key" placeholder="sk-...">
+            </div>
+            <div class="modal-actions">
+                <button id="btn-cancel-ai" class="btn btn-secondary">Cancelar</button>
+                <button id="btn-save-ai" class="btn btn-success">Guardar Key</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
