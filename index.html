@@ -13,13 +13,14 @@
         <!-- Header / Toolbar -->
         <header class="toolbar no-print">
             <div class="logo-area">
-                <span class="logo-text">GEMSA <small>SERVICIOS GENERALES</small></span>
+                <img src="logo.png" alt="GEMSA" style="height: 40px; display: block;">
             </div>
             <div class="actions">
                 <button id="btn-ai-settings" class="btn btn-secondary" title="Configurar Inteligencia Artificial">⚙️ Config IA</button>
                 <button id="btn-reset" class="btn btn-danger">Restablecer</button>
                 <button id="btn-preview" class="btn btn-primary">Vista Previa</button>
                 <button id="btn-print" class="btn btn-success">Imprimir PDF</button>
+                <button id="btn-word" class="btn btn-primary" style="background-color: #2b579a;">Exportar Word</button>
                 <button id="btn-save" class="btn btn-secondary">Guardar archivo</button>
                 <label for="file-upload" class="btn btn-secondary" style="cursor: pointer;">Abrir archivo</label>
                 <input id="file-upload" type="file" accept=".json,.gemsa" style="display: none;">
@@ -85,8 +86,11 @@
                                 <textarea id="introduccion" name="introduccion" rows="3"></textarea>
                             </div>
                             <div class="ai-assistant-container">
+                                <label style="text-align: left; display: block; margin-bottom: 5px;"><strong>Fotos de contexto para la IA:</strong> (Opcional, no salen en el reporte)</label>
+                                <input type="file" id="ai-context-photos" multiple accept="image/*" style="margin-bottom: 15px;">
+                                
                                 <button type="button" id="btn-ai-autocomplete" class="btn btn-primary btn-ai">✨ Autocompletar con IA</button>
-                                <small class="ai-hint">La IA usará la descripción y las fotos cargadas para sugerir Objetivos, Alcance, Recursos, Procedimientos y Conclusiones.</small>
+                                <small class="ai-hint">La IA usará la descripción y las fotos de contexto para sugerir Objetivos, Alcance, Recursos, Procedimientos y Conclusiones.</small>
                                 <div id="ai-loading" style="display: none; margin-top: 10px; color: var(--primary-color);">Generando contenido, por favor espera...</div>
                             </div>
                         </fieldset>
@@ -224,36 +228,10 @@
                         <!-- 6. ANEXO: PANEL FOTOGRÁFICO -->
                         <fieldset>
                             <legend>6. Anexo: Panel Fotográfico</legend>
-                            <div class="photo-grid">
-                                <!-- Foto 1 -->
-                                <div class="photo-upload-card">
-                                    <label>Foto 1: Antes</label>
-                                    <div class="img-preview" id="preview-foto-1"></div>
-                                    <input type="file" id="foto_1" accept="image/*">
-                                    <input type="text" id="desc_foto_1" placeholder="Descripción de la foto 1">
-                                </div>
-                                <!-- Foto 2 -->
-                                <div class="photo-upload-card">
-                                    <label>Foto 2: Durante</label>
-                                    <div class="img-preview" id="preview-foto-2"></div>
-                                    <input type="file" id="foto_2" accept="image/*">
-                                    <input type="text" id="desc_foto_2" placeholder="Descripción de la foto 2">
-                                </div>
-                                <!-- Foto 3 -->
-                                <div class="photo-upload-card">
-                                    <label>Foto 3: Acabado</label>
-                                    <div class="img-preview" id="preview-foto-3"></div>
-                                    <input type="file" id="foto_3" accept="image/*">
-                                    <input type="text" id="desc_foto_3" placeholder="Descripción de la foto 3">
-                                </div>
-                                <!-- Foto 4 -->
-                                <div class="photo-upload-card">
-                                    <label>Foto 4: Después</label>
-                                    <div class="img-preview" id="preview-foto-4"></div>
-                                    <input type="file" id="foto_4" accept="image/*">
-                                    <input type="text" id="desc_foto_4" placeholder="Descripción de la foto 4">
-                                </div>
+                            <div id="dynamic-photos-container" class="photo-grid">
+                                <!-- Dynamic photos will be added here -->
                             </div>
+                            <button type="button" id="btn-add-photo" class="btn btn-secondary" style="margin-top: 15px;">+ Añadir Foto al Reporte</button>
                         </fieldset>
 
                     </form>
@@ -267,10 +245,7 @@
                     <!-- Cover Page / Header -->
                     <div class="doc-header">
                         <div class="doc-logo">
-                            <div class="gemsa-logo">
-                                <span class="gemsa">GEMSA</span>
-                                <span class="serv">SERVICIOS GENERALES</span>
-                            </div>
+                            <img src="logo.png" alt="GEMSA" style="height: 60px;">
                         </div>
                         <div class="doc-title">
                             <h1>INFORME TÉCNICO</h1>
@@ -373,31 +348,8 @@
 
                     <div class="doc-section">
                         <h3>6. ANEXO: PANEL FOTOGRÁFICO</h3>
-                        <div class="doc-photo-grid">
-                            <div class="doc-photo-item">
-                                <div class="photo-img-box">
-                                    <img id="doc-img-1" src="" alt="Foto 1" style="display:none;">
-                                </div>
-                                <p class="photo-caption"><strong>Registro del Proceso / Antes:</strong> <br><span id="doc-desc-1"></span></p>
-                            </div>
-                            <div class="doc-photo-item">
-                                <div class="photo-img-box">
-                                    <img id="doc-img-2" src="" alt="Foto 2" style="display:none;">
-                                </div>
-                                <p class="photo-caption"><strong>Registro del Proceso / Durante:</strong> <br><span id="doc-desc-2"></span></p>
-                            </div>
-                            <div class="doc-photo-item">
-                                <div class="photo-img-box">
-                                    <img id="doc-img-3" src="" alt="Foto 3" style="display:none;">
-                                </div>
-                                <p class="photo-caption"><strong>Elementos Intervenidos / Acabado:</strong> <br><span id="doc-desc-3"></span></p>
-                            </div>
-                            <div class="doc-photo-item">
-                                <div class="photo-img-box">
-                                    <img id="doc-img-4" src="" alt="Foto 4" style="display:none;">
-                                </div>
-                                <p class="photo-caption"><strong>Área Final Entregada / Después:</strong> <br><span id="doc-desc-4"></span></p>
-                            </div>
+                        <div class="doc-photo-grid" id="doc-photo-list">
+                            <!-- Dynamic photos will be rendered here -->
                         </div>
                     </div>
 

@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Buttons
     const btnPreview = document.getElementById('btn-preview');
     const btnPrint = document.getElementById('btn-print');
+    const btnWord = document.getElementById('btn-word');
     const btnSave = document.getElementById('btn-save');
     const btnReset = document.getElementById('btn-reset');
     const fileUpload = document.getElementById('file-upload');
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputApiKey = document.getElementById('openai-api-key');
     const btnAiAutocomplete = document.getElementById('btn-ai-autocomplete');
     const aiLoading = document.getElementById('ai-loading');
+    const aiContextPhotosInput = document.getElementById('ai-context-photos');
 
     // Modal
     const resetModal = document.getElementById('reset-modal');
@@ -31,10 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnAddAlcance = document.getElementById('btn-add-alcance');
     let alcanceItems = [];
 
-    // State for Images (Base64)
-    const imagesState = {
-        foto_1: '', foto_2: '', foto_3: '', foto_4: ''
-    };
+    // Dynamic Photos State
+    // Each object: { id: number, base64: string, desc: string }
+    let reportPhotos = [];
+    let photoIdCounter = 0;
+    const dynamicPhotosContainer = document.getElementById('dynamic-photos-container');
+    const btnAddPhoto = document.getElementById('btn-add-photo');
 
     // --- View Toggle ---
     let isPreview = false;
@@ -64,13 +68,12 @@ document.addEventListener('DOMContentLoaded', () => {
             div.className = 'checklist-item';
             div.innerHTML = `
                 <span>${item}</span>
-                <button type="button" class="btn-remove" data-index="${index}">X</button>
+                <button type="button" class="btn-remove-alcance" data-index="${index}">X</button>
             `;
             alcanceListContainer.appendChild(div);
         });
 
-        // Add event listeners to remove buttons
-        document.querySelectorAll('.btn-remove').forEach(btn => {
+        document.querySelectorAll('.btn-remove-alcance').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const index = e.target.getAttribute('data-index');
                 alcanceItems.splice(index, 1);
@@ -94,29 +97,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Image Handling ---
-    function handleImageUpload(inputId, previewId, stateKey) {
-        const input = document.getElementById(inputId);
-        const preview = document.getElementById(previewId);
-        
-        input.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const base64String = event.target.result;
-                    imagesState[stateKey] = base64String;
-                    preview.style.backgroundImage = `url(${base64String})`;
-                };
-                reader.readAsDataURL(file);
-            }
+    // --- Dynamic Photos Logic ---
+    function renderDynamicPhotos() {
+        dynamicPhotosContainer.innerHTML = '';
+        reportPhotos.forEach((photo, index) => {
+            const card = document.createElement('div');
+            card.className = 'photo-upload-card';
+            card.innerHTML = `
+                <label>Foto ${index + 1}</label>
+                <div class="img-preview" id="preview-photo-${photo.id}" style="background-image: ${photo.base64 ? `url(${photo.base64})` : 'none'}"></div>
+                <input type="file" id="input-photo-${photo.id}" accept="image/*">
+                <input type="text" id="desc-photo-${photo.id}" placeholder="Descripción de la foto" value="${photo.desc}">
+                <button type="button" class="btn btn-sm btn-danger btn-remove-photo" style="margin-top:10px" data-id="${photo.id}">Eliminar Foto</button>
+            `;
+            dynamicPhotosContainer.appendChild(card);
+
+            // Setup listeners for this card
+            document.getElementById(`input-photo-${photo.id}`).addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        photo.base64 = event.target.result;
+                        document.getElementById(`preview-photo-${photo.id}`).style.backgroundImage = `url(${photo.base64})`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            document.getElementById(`desc-photo-${photo.id}`).addEventListener('input', (e) => {
+                photo.desc = e.target.value;
+            });
+        });
+
+        document.querySelectorAll('.btn-remove-photo').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(e.target.getAttribute('data-id'));
+                reportPhotos = reportPhotos.filter(p => p.id !== id);
+                renderDynamicPhotos();
+            });
         });
     }
 
-    handleImageUpload('foto_1', 'preview-foto-1', 'foto_1');
-    handleImageUpload('foto_2', 'preview-foto-2', 'foto_2');
-    handleImageUpload('foto_3', 'preview-foto-3', 'foto_3');
-    handleImageUpload('foto_4', 'preview-foto-4', 'foto_4');
+    btnAddPhoto.addEventListener('click', () => {
+        photoIdCounter++;
+        reportPhotos.push({ id: photoIdCounter, base64: '', desc: '' });
+        renderDynamicPhotos();
+    });
+
+    // Helpers to convert File to Base64 (for AI)
+    function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
 
     // --- Update Preview Document ---
     function updatePreview() {
@@ -180,22 +217,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // Firma
         document.getElementById('doc-firma-nombre').textContent = document.getElementById('firma_nombre').value;
 
-        // Fotos
-        const updateDocPhoto = (id, base64, descSourceId, descTargetId) => {
-            const img = document.getElementById(`doc-img-${id}`);
-            if (base64) {
-                img.src = base64;
-                img.style.display = 'block';
-            } else {
-                img.style.display = 'none';
+        // Dynamic Photos Preview
+        const docPhotoList = document.getElementById('doc-photo-list');
+        docPhotoList.innerHTML = '';
+        reportPhotos.forEach((photo) => {
+            if (photo.base64 || photo.desc) {
+                const item = document.createElement('div');
+                item.className = 'doc-photo-item';
+                item.innerHTML = `
+                    <div class="photo-img-box">
+                        ${photo.base64 ? `<img src="${photo.base64}" alt="Foto">` : ''}
+                    </div>
+                    <p class="photo-caption">${photo.desc}</p>
+                `;
+                docPhotoList.appendChild(item);
             }
-            document.getElementById(descTargetId).textContent = document.getElementById(descSourceId).value;
-        };
-        
-        updateDocPhoto(1, imagesState.foto_1, 'desc_foto_1', 'doc-desc-1');
-        updateDocPhoto(2, imagesState.foto_2, 'desc_foto_2', 'doc-desc-2');
-        updateDocPhoto(3, imagesState.foto_3, 'desc_foto_3', 'doc-desc-3');
-        updateDocPhoto(4, imagesState.foto_4, 'desc_foto_4', 'doc-desc-4');
+        });
     }
 
     // --- Save to JSON ---
@@ -205,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add lists and images
         data.alcanceItems = alcanceItems;
-        data.imagesState = imagesState;
+        data.reportPhotos = reportPhotos;
 
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
         const downloadAnchorNode = document.createElement('a');
@@ -231,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Restore form fields
                 Object.keys(data).forEach(key => {
-                    if (key !== 'alcanceItems' && key !== 'imagesState' && !key.startsWith('foto_')) {
+                    if (key !== 'alcanceItems' && key !== 'reportPhotos') {
                         const el = document.getElementById(key);
                         if (el) {
                             el.value = data[key];
@@ -245,17 +282,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderAlcanceList();
                 }
 
-                // Restore images
-                if (data.imagesState) {
-                    ['foto_1', 'foto_2', 'foto_3', 'foto_4'].forEach(key => {
-                        imagesState[key] = data.imagesState[key];
-                        const preview = document.getElementById(`preview-${key.replace('_', '-')}`);
-                        if (imagesState[key]) {
-                            preview.style.backgroundImage = `url(${imagesState[key]})`;
-                        } else {
-                            preview.style.backgroundImage = 'none';
-                        }
-                    });
+                // Restore dynamic photos
+                if (data.reportPhotos) {
+                    reportPhotos = data.reportPhotos;
+                    // update max id
+                    if (reportPhotos.length > 0) {
+                        photoIdCounter = Math.max(...reportPhotos.map(p => p.id));
+                    }
+                    renderDynamicPhotos();
                 }
                 
                 alert('Archivo cargado exitosamente.');
@@ -267,7 +301,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
         reader.readAsText(file);
-        // Reset input to allow loading the same file again
         e.target.value = '';
     });
 
@@ -285,10 +318,9 @@ document.addEventListener('DOMContentLoaded', () => {
         alcanceItems = [];
         renderAlcanceList();
         
-        ['foto_1', 'foto_2', 'foto_3', 'foto_4'].forEach(key => {
-            imagesState[key] = '';
-            document.getElementById(`preview-${key.replace('_', '-')}`).style.backgroundImage = 'none';
-        });
+        reportPhotos = [];
+        renderDynamicPhotos();
+        aiContextPhotosInput.value = '';
 
         resetModal.style.display = 'none';
         if(isPreview) btnPreview.click(); // Switch back to form view
@@ -296,16 +328,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Print PDF ---
     btnPrint.addEventListener('click', () => {
-        // If not in preview mode, update it first to ensure latest data is printed
-        if (!isPreview) {
-            updatePreview();
-        }
+        if (!isPreview) updatePreview();
         
-        // Use html2pdf for robust PDF generation honoring CSS and structure
         const element = document.getElementById('document-content');
         const filename = (document.getElementById('cod_informe').value || 'Informe_Tecnico') + '.pdf';
         
-        // Temporarily ensure preview is visible for the capture if it wasn't
         const wasHidden = !isPreview;
         if (wasHidden) {
             previewView.style.display = 'block';
@@ -327,8 +354,57 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // --- Export Word (.doc) ---
+    btnWord.addEventListener('click', () => {
+        if (!isPreview) updatePreview();
+        
+        const content = document.getElementById('document-content').innerHTML;
+        const styles = Array.from(document.styleSheets)
+            .map(sheet => {
+                try {
+                    return Array.from(sheet.cssRules).map(rule => rule.cssText).join('');
+                } catch(e) {
+                    return ''; // CORS issue with external sheets
+                }
+            }).join('\n');
+
+        const html = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head>
+                <meta charset='utf-8'>
+                <title>Export HTML To Doc</title>
+                <style>
+                    body { font-family: Arial, sans-serif; }
+                    ${styles}
+                </style>
+            </head>
+            <body>
+                ${content}
+            </body>
+            </html>
+        `;
+
+        const blob = new Blob(['\ufeff', html], {
+            type: 'application/msword'
+        });
+        
+        const url = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(html);
+        const filename = (document.getElementById('cod_informe').value || 'Informe_Tecnico') + '.doc';
+        
+        const downloadLink = document.createElement("a");
+        document.body.appendChild(downloadLink);
+        
+        if (navigator.msSaveOrOpenBlob) {
+            navigator.msSaveOrOpenBlob(blob, filename);
+        } else {
+            downloadLink.href = url;
+            downloadLink.download = filename;
+            downloadLink.click();
+        }
+        document.body.removeChild(downloadLink);
+    });
+
     // --- AI Integration ---
-    // Load saved API key on startup
     const savedApiKey = localStorage.getItem('openai_api_key');
     if (savedApiKey) {
         inputApiKey.value = savedApiKey;
@@ -365,15 +441,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const nombreProyecto = document.getElementById('nombre_proyecto').value;
         const detProyecto = document.getElementById('det_proyecto').value;
 
-        if (!descripcion && !imagesState.foto_1 && !imagesState.foto_2 && !imagesState.foto_3 && !imagesState.foto_4) {
-            alert('Por favor ingresa al menos una Descripción o sube fotos para que la IA tenga contexto.');
+        const files = aiContextPhotosInput.files;
+
+        if (!descripcion && files.length === 0) {
+            alert('Por favor ingresa una Descripción o sube fotos de contexto para que la IA tenga información.');
             return;
         }
 
         btnAiAutocomplete.disabled = true;
         aiLoading.style.display = 'block';
 
-        // Prepare content array for GPT-4o
         const messagesContent = [
             {
                 type: "text",
@@ -398,17 +475,16 @@ Usa lenguaje técnico, profesional y formal.`
             }
         ];
 
-        // Add images if present
-        ['foto_1', 'foto_2', 'foto_3', 'foto_4'].forEach(key => {
-            if (imagesState[key]) {
+        try {
+            // Process AI Context Photos
+            for (let i = 0; i < files.length; i++) {
+                const base64 = await fileToBase64(files[i]);
                 messagesContent.push({
                     type: "image_url",
-                    image_url: { url: imagesState[key] }
+                    image_url: { url: base64 }
                 });
             }
-        });
 
-        try {
             const response = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -447,7 +523,6 @@ Usa lenguaje técnico, profesional y formal.`
             if (aiResult.recomendaciones) document.getElementById('recomendaciones').value = aiResult.recomendaciones;
 
             if (aiResult.alcanceItems && Array.isArray(aiResult.alcanceItems)) {
-                // Append instead of replacing to not lose existing user items
                 aiResult.alcanceItems.forEach(item => {
                     if (!alcanceItems.includes(item)) alcanceItems.push(item);
                 });
@@ -465,6 +540,7 @@ Usa lenguaje técnico, profesional y formal.`
         }
     });
 
-    // Initialize empty Alcance list
+    // Initialize
     renderAlcanceList();
+    renderDynamicPhotos();
 });

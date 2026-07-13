@@ -398,7 +398,14 @@ input:focus, textarea:focus {
     /* Ensure document wrapper shrinks or scrolls if printed on mobile */
     .document-wrapper {
         width: 100%;
+        max-width: 100vw;
         min-height: auto;
-        padding: 10mm;
+        padding: 5mm;
+        font-size: 10pt; /* slightly smaller text for mobile viewing */
+        box-shadow: none;
+    }
+    
+    .doc-photo-grid {
+        grid-template-columns: 1fr; /* 1 column for photos on mobile */
     }
 }
